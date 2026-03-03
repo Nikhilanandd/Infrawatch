@@ -1,0 +1,29 @@
+[Unit]
+Description=InfraWatch Server - Infrastructure Monitoring
+Documentation=https://github.com/nikhil/infrawatch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=infrawatch
+Group=infrawatch
+ExecStart=/usr/local/bin/infrawatch-server --config /etc/infrawatch/server.yaml
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/infrawatch
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=infrawatch-server
+
+[Install]
+WantedBy=multi-user.target

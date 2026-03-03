@@ -1,0 +1,21 @@
+[Unit]
+Description=InfraWatch Agent - Infrastructure Monitoring
+Documentation=https://github.com/nikhil/infrawatch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/infrawatch-agent --config /etc/infrawatch/agent.yaml
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=infrawatch-agent
+
+[Install]
+WantedBy=multi-user.target

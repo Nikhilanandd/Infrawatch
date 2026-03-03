@@ -1,0 +1,29 @@
+# ============================================
+# InfraWatch Agent Dockerfile
+# ============================================
+
+FROM golang:1.22-alpine AS builder
+RUN apk add --no-cache gcc musl-dev
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o infrawatch-agent ./cmd/agent
+
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata
+
+RUN addgroup -S infrawatch && adduser -S infrawatch -G infrawatch
+
+WORKDIR /app
+
+COPY --from=builder /build/infrawatch-agent .
+COPY configs/agent.yaml ./configs/agent.yaml
+
+RUN mkdir -p /etc/infrawatch/certs && \
+    chown -R infrawatch:infrawatch /etc/infrawatch /app
+
+EXPOSE 0
+
+ENTRYPOINT ["./infrawatch-agent"]
+CMD ["--config", "configs/agent.yaml"]

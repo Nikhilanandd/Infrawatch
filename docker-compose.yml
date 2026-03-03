@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: infrawatch-server
+    ports:
+      - "8443:8443"
+    volumes:
+      - infrawatch-data:/var/lib/infrawatch
+      - ./configs/server.yaml:/app/configs/server.yaml:ro
+      - ./certs:/etc/infrawatch/certs:ro
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8443/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: infrawatch-agent
+    volumes:
+      - ./configs/agent.yaml:/app/configs/agent.yaml:ro
+      - ./certs:/etc/infrawatch/certs:ro
+      - /proc:/host/proc:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=UTC
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+    pid: host
+    network_mode: host
+    privileged: true
+
+volumes:
+  infrawatch-data:
