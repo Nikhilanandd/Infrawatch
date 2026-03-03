@@ -1,0 +1,44 @@
+# Binaries
+bin/
+infrawatch-server
+infrawatch-agent
+*.exe
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# TLS certificates (never commit these)
+certs/
+*.pem
+*.crt
+*.key
+
+# Coverage
+coverage.out
+coverage.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+tmp/
+
+# Environment
+.env
+.env.local
+
+# Node (frontend)
+web/node_modules/
+web/build/
+web/dist/
