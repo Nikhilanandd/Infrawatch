@@ -1,0 +1,29 @@
+# InfraWatch Agent Configuration
+
+agent:
+  node_id: "node-01"
+  collect_interval: 5s
+  log_level: "info"
+
+server:
+  url: "https://localhost:8443/api/v1/metrics"
+  # mTLS certificate paths
+  ca_cert: "/etc/infrawatch/certs/ca.crt"
+  client_cert: "/etc/infrawatch/certs/agent.crt"
+  client_key: "/etc/infrawatch/certs/agent.key"
+
+collectors:
+  cpu: true
+  memory: true
+  disk: true
+  network: true
+  docker: true
+  systemd: true
+  uptime: true
+
+# Systemd services to monitor
+services:
+  - nginx
+  - docker
+  - sshd
+  - postgresql

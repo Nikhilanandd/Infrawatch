@@ -1,0 +1,57 @@
+# InfraWatch Server Configuration
+
+server:
+  host: "0.0.0.0"
+  port: 8443
+  log_level: "info"
+
+  # mTLS
+  tls:
+    enabled: true
+    ca_cert: "/etc/infrawatch/certs/ca.crt"
+    server_cert: "/etc/infrawatch/certs/server.crt"
+    server_key: "/etc/infrawatch/certs/server.key"
+
+database:
+  path: "/var/lib/infrawatch/infrawatch.db"
+
+auth:
+  jwt_secret: "change-me-in-production-use-a-random-64-char-string"
+  token_expiry: 24h
+
+alerts:
+  evaluation_interval: 10s
+  rules:
+    - name: "High CPU Usage"
+      metric: "cpu"
+      operator: ">"
+      threshold: 80.0
+      severity: "warning"
+      enabled: true
+    - name: "Critical Disk Usage"
+      metric: "disk"
+      operator: ">"
+      threshold: 85.0
+      severity: "critical"
+      enabled: true
+    - name: "Service Down"
+      metric: "service"
+      operator: "=="
+      threshold: 0
+      severity: "critical"
+      enabled: true
+
+channels:
+  email:
+    enabled: false
+    smtp_host: "smtp.example.com"
+    smtp_port: 587
+    username: "alerts@example.com"
+    password: "secret"
+    from: "alerts@example.com"
+    to:
+      - "ops@example.com"
+  slack:
+    enabled: false
+    webhook_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+    channel: "#alerts"
