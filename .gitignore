@@ -42,3 +42,7 @@ tmp/
 web/node_modules/
 web/build/
 web/dist/
+
+# Automation 
+git-push.sh
+git-push-fix.sh

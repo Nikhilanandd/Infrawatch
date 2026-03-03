@@ -149,4 +149,4 @@ See `configs/server.yaml` and `configs/agent.yaml` for full configuration refere
 
 ## License
 
-MIT
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
