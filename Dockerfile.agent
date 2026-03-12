@@ -11,7 +11,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o infrawatch-agent ./cmd/agent
 
 FROM alpine:3.19
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata su-exec
 
 RUN addgroup -S infrawatch && adduser -S infrawatch -G infrawatch
 
@@ -19,11 +19,13 @@ WORKDIR /app
 
 COPY --from=builder /build/infrawatch-agent .
 COPY configs/agent.yaml ./configs/agent.yaml
+COPY scripts/docker-entrypoint-agent.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p /etc/infrawatch/certs && \
-    chown -R infrawatch:infrawatch /etc/infrawatch /app
+    chown -R infrawatch:infrawatch /etc/infrawatch /app && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 0
 
-ENTRYPOINT ["./infrawatch-agent"]
-CMD ["--config", "configs/agent.yaml"]
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["./infrawatch-agent", "--config", "configs/agent.yaml"]
