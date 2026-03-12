@@ -1,5 +1,7 @@
 # 🔭 InfraWatch
 
+[![CI](https://github.com/nikhilanandd/Infrawatch/actions/workflows/ci.yml/badge.svg)](https://github.com/nikhilanandd/Infrawatch/actions/workflows/ci.yml)
+
 Production-grade infrastructure monitoring system built with Go.
 
 ## Architecture
@@ -7,7 +9,7 @@ Production-grade infrastructure monitoring system built with Go.
 ```
 ┌─────────────┐     HTTPS/mTLS      ┌──────────────────┐     WebSocket     ┌──────────────┐
 │   Agent(s)  │ ──────────────────▶  │  Central Server  │ ◀──────────────── │   Frontend   │
-│  (Go binary)│   JSON metrics/5s    │   (Go + SQLite)  │   live updates    │   (React)    │
+│  (Go binary)│   JSON metrics/5s    │   (Go + SQLite)  │   live updates    │   (React 18) │
 └─────────────┘                      └──────────────────┘                   └──────────────┘
                                             │
                                      ┌──────┴──────┐
@@ -25,13 +27,16 @@ Production-grade infrastructure monitoring system built with Go.
 - **Alert Engine**: Configurable rules (CPU > 80%, Disk > 85%, Service down)
 - **Notifications**: Email (SMTP) and Slack webhook
 - **Real-time**: WebSocket live metric streaming
+- **React Dashboard**: Dark-themed SPA with Chart.js visualizations, served by the Go server
 - **SQLite Storage**: WAL mode, time-series indexed, zero-config database
-- **37 Unit Tests**: Comprehensive test coverage across 6 packages
+- **49 Unit & Integration Tests**: Comprehensive coverage across 7 packages
+- **CI/CD**: GitHub Actions pipeline with Go + Node build verification
 
 ## Quick Start
 
 ### Prerequisites
 - Go 1.24+
+- Node.js 20+ (for frontend build)
 - Make
 - OpenSSL (for cert generation)
 
@@ -41,6 +46,7 @@ git clone https://github.com/nikhilanandd/Infrawatch.git
 cd Infrawatch
 make deps
 make build
+make build-web
 ```
 
 ### 2. Generate mTLS certificates
@@ -52,6 +58,7 @@ make certs
 ```bash
 make run-server
 ```
+Open http://localhost:8443 — the Go server serves the React dashboard.
 
 ### 4. Run the agent (separate terminal)
 ```bash
@@ -63,14 +70,31 @@ make run-agent
 # Health check
 curl -k https://localhost:8443/health
 
-# Login
-curl -k -X POST https://localhost:8443/api/login \
+# Login (default: admin/admin)
+curl -k -X POST https://localhost:8443/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin"}'
 
 # Query nodes (use token from login response)
-curl -k https://localhost:8443/api/nodes \
+curl -k https://localhost:8443/api/v1/nodes \
   -H "Authorization: Bearer <TOKEN>"
+```
+
+## Docker
+
+```bash
+# Build and start the full stack
+docker compose up --build -d
+
+# Check service health
+docker compose ps
+
+# View logs
+docker compose logs -f server
+docker compose logs -f agent
+
+# Stop everything
+docker compose down
 ```
 
 ## API Endpoints
@@ -78,17 +102,19 @@ curl -k https://localhost:8443/api/nodes \
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET | `/health` | No | Health check |
-| POST | `/api/login` | No | Get JWT token |
-| POST | `/api/metrics` | mTLS | Agent metric ingestion |
-| GET | `/api/nodes` | JWT | List monitored nodes |
-| GET | `/api/nodes/:id/metrics` | JWT | Query node metrics |
-| GET | `/api/alerts` | JWT | Alert history |
-| GET | `/ws` | JWT | WebSocket live updates |
+| POST | `/api/v1/auth/login` | No | Authenticate, get JWT token |
+| POST | `/api/v1/metrics` | mTLS | Agent metric ingestion |
+| GET | `/api/v1/nodes` | JWT | List monitored nodes |
+| GET | `/api/v1/metrics?node_id=X&from=T&to=T&limit=N` | JWT | Query node metrics |
+| GET | `/api/v1/alerts?node_id=X&limit=N` | JWT | Alert history |
+| GET | `/api/v1/alert-rules` | JWT | List alert rules |
+| GET | `/api/v1/ws` | WS | WebSocket live updates |
+| GET | `/` | No | React dashboard (SPA) |
 
 ## Testing
 
 ```bash
-# Run all tests
+# Run all tests (unit + integration)
 make test
 
 # Verbose output
@@ -112,7 +138,7 @@ go tool cover -func=coverage.out
 │   ├── config/                # YAML config loader
 │   └── server/
 │       ├── alert/             # Rule engine + notifiers
-│       ├── api/               # REST handlers + router
+│       ├── api/               # REST handlers + router + SPA serving
 │       ├── auth/              # JWT + RBAC middleware
 │       ├── store/             # SQLite storage
 │       └── websocket/         # Live update hub
@@ -122,10 +148,11 @@ go tool cover -func=coverage.out
 ├── configs/                   # YAML config files
 ├── scripts/                   # Certificate generation
 ├── deployments/               # Systemd units
-├── web/                       # React frontend (TODO)
-├── Dockerfile                 # Server container
+├── web/                       # React 18 frontend (Chart.js, dark theme)
+├── .github/workflows/         # CI/CD pipeline
+├── Dockerfile                 # Server container (multi-stage)
 ├── Dockerfile.agent           # Agent container
-├── docker-compose.yml         # Full stack
+├── docker-compose.yml         # Full stack orchestration
 └── Makefile                   # Build targets
 ```
 
@@ -143,9 +170,11 @@ See `configs/server.yaml` and `configs/agent.yaml` for full configuration refere
 | JWT Auth | ✅ Complete |
 | Alert Engine | ✅ Complete |
 | WebSocket | ✅ Complete |
+| React Frontend | ✅ Complete |
 | Unit Tests | ✅ 37 passing |
-| React Frontend | 🚧 In Progress |
-| CI/CD | 🚧 Planned |
+| Integration Tests | ✅ 12 passing |
+| CI/CD | ✅ GitHub Actions |
+| Docker | ✅ Multi-stage builds |
 
 ## License
 
