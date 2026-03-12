@@ -2,6 +2,9 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/nikhilanandd/infrawatch/internal/server/auth"
 )
@@ -50,5 +53,68 @@ func (h *Handler) NewRouter() http.Handler {
 	}
 	_ = adminMw // reserved for future admin-only endpoints
 
+	// Serve React SPA from web/build if it exists
+	if webDir := findWebBuildDir(); webDir != "" {
+		spa := spaHandler{staticDir: webDir}
+		mux.Handle("GET /", spa)
+	}
+
 	return corsMiddleware(mux)
+}
+
+// spaHandler serves static files and falls back to index.html for client-side routing.
+type spaHandler struct {
+	staticDir string
+}
+
+func (s spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Only serve GET requests
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Clean the path
+	p := filepath.Clean(r.URL.Path)
+	if p == "/" {
+		p = "/index.html"
+	}
+
+	// Don't serve API or WebSocket paths
+	if strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/health") {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Check if the file exists on disk
+	fullPath := filepath.Join(s.staticDir, p)
+	if _, err := os.Stat(fullPath); err == nil {
+		http.FileServer(http.Dir(s.staticDir)).ServeHTTP(w, r)
+		return
+	}
+
+	// Fall back to index.html for SPA client-side routing
+	http.ServeFile(w, r, filepath.Join(s.staticDir, "index.html"))
+}
+
+// findWebBuildDir looks for the React build directory in known locations.
+func findWebBuildDir() string {
+	candidates := []string{
+		"web/build",     // development (run from project root)
+		"./web/build",   // explicit relative
+	}
+	for _, c := range candidates {
+		if info, err := os.Stat(c); err == nil && info.IsDir() {
+			return c
+		}
+	}
+	// Check if running from a different working directory
+	if exe, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exe)
+		candidate := filepath.Join(dir, "web", "build")
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			return candidate
+		}
+	}
+	return ""
 }
