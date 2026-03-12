@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   server:
     build:
@@ -20,6 +18,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
   agent:
     build:
@@ -38,8 +37,13 @@ services:
         condition: service_healthy
     restart: unless-stopped
     pid: host
-    network_mode: host
     privileged: true
+    healthcheck:
+      test: ["CMD", "pgrep", "infrawatch-agent"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   infrawatch-data:
